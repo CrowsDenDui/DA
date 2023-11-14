@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn import metrics
 from sklearn.mixture import GaussianMixture
+from mpl_toolkits.mplot3d import Axes3D
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
 import warnings
@@ -40,22 +41,25 @@ data=data.dropna(subset=['Income'])
 data=data[data['Income']<600000]
 
 print(data)
-# Ngôi sao: Khách hàng cũ có thu nhập cao và chi tiêu cao.
-# Cần chú ý: Khách hàng mới có thu nhập dưới mức trung bình và mức chi tiêu thấp.
-# Tiềm năng cao: Khách hàng mới có thu nhập cao và mức chi tiêu cao.
-# Nhóm Rò rỉ: Khách hàng cũ có thu nhập dưới mức trung bình và mức chi tiêu thấp.
-# chuẩn hóa dữ liệu và sau đó tôi sẽ tạo phân cụm khách hàng theo các số liệu được xác định ở trên
+# Chuẩn hóa dữ liệu
+# chuẩn hóa các biến như Income, Seniority và Spending, đưa chúng về cùng một khoảng giá trị
 scaler=StandardScaler()
 dataset_temp=data[['Income','Seniority','Spending']]
 X_std=scaler.fit_transform(dataset_temp)
+# norm='l2' là để đảm bảo rằng mỗi hàng của dữ liệu có tổng bình phương bằng 1
 X = normalize(X_std,norm='l2')
 
-gmm=GaussianMixture(n_components=4, covariance_type='spherical',max_iter=2000, random_state=5).fit(X)
+# Huấn luyện mô hình Gaussian Mixture Model (GMM)
+# 2 thành phần (clusters) và kiểu covariance là spherical để phân loại dữ liệu đã được chuẩn hoá
+gmm=GaussianMixture(n_components=2, covariance_type='spherical',max_iter=2000, random_state=3).fit(X)
 labels = gmm.predict(X)
+# Gán nhãn cho từng mẫu dữ liệu dựa trên kết quả của GMM và thay thế các nhãn số thành nhãn thể hiện ý nghĩa, ví dụ như 'VIP' và 'Visiting guests
 dataset_temp['Cluster'] = labels
-dataset_temp=dataset_temp.replace({0:'Stars',1:'Need attention',2:'High potential',3:'Leaky bucket'})
+dataset_temp=dataset_temp.replace({0:'VIP',1:'Visiting guests'})
+# Kết hợp thông tin nhóm đã được gán với dữ liệu gốc thông qua các chỉ số của DataFrame
 data = data.merge(dataset_temp.Cluster, left_index=True, right_index=True)
 
+# Tính và hiển thị tóm tắt thống kê bao gồm các chỉ số như mean, std, min, max cho mỗi nhóm (Cluster) trên các biến Income, Spending và Seniority
 pd.options.display.float_format = "{:.0f}".format
 summary=data[['Income','Spending','Seniority','Cluster']]
 summary.set_index("Cluster", inplace = True)
@@ -64,21 +68,19 @@ summary.head()
 
 print(summary)
 
-# PLOT = go.Figure()
-# for C in list(data.Cluster.unique()):
-    
+# tạo ra một figure với kích thước 7x7 inches
+fig = plt.figure(figsize=(7, 7))
+ax = fig.add_subplot(111, projection='3d')
+# scatter 3D với các điểm dữ liệu từ từng nhóm
+for cluster_label in data['Cluster'].unique():
+    cluster_data = data[data['Cluster'] == cluster_label]
+    ax.scatter(cluster_data['Income'], cluster_data['Seniority'], cluster_data['Spending'], label=str(cluster_label),
+               s=6, linewidths=1)
 
-#     PLOT.add_trace(go.Scatter3d(x = data[data.Cluster == C]['Income'],
-#                                 y = data[data.Cluster == C]['Seniority'],
-#                                 z = data[data.Cluster == C]['Spending'],                        
-#                                 mode = 'markers',marker_size = 6, marker_line_width = 1,
-#                                 name = str(C)))
-# PLOT.update_traces(hovertemplate='Income: %{x} <br>Seniority: %{y} <br>Spending: %{z}')
+ax.set_xlabel('Income')
+ax.set_ylabel('Seniority')
+ax.set_zlabel('Spending')
+ax.set_title('Customer Segmentation')
 
-    
-# PLOT.update_layout(width = 800, height = 800, autosize = True, showlegend = True,
-#                    scene = dict(xaxis=dict(title = 'Income', titlefont_color = 'black'),
-#                                 yaxis=dict(title = 'Seniority', titlefont_color = 'black'),
-#                                 zaxis=dict(title = 'Spending', titlefont_color = 'black')),
-#                    font = dict(family = "Gilroy", color  = 'black', size = 12))
-# PLOT.show()
+plt.legend()
+plt.show()
