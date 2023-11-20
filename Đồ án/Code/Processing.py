@@ -2,14 +2,11 @@ import numpy as np
 import pandas as pd
 import datetime
 from datetime import date
-import matplotlib
 import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from sklearn.preprocessing import StandardScaler, normalize
-from sklearn import metrics
 from sklearn.mixture import GaussianMixture
-from mpl_toolkits.mplot3d import Axes3D
 from mlxtend.frequent_patterns import apriori
 from mlxtend.frequent_patterns import association_rules
 import warnings
@@ -68,89 +65,35 @@ summary.head()
 
 print(summary)
 
-# tạo ra một figure với kích thước 7x7 inches
-fig = plt.figure(figsize=(7, 7))
-ax = fig.add_subplot(111, projection='3d')
-# scatter 3D với các điểm dữ liệu từ từng nhóm
-for cluster_label in data['Cluster'].unique():
-    cluster_data = data[data['Cluster'] == cluster_label]
-    ax.scatter(cluster_data['Income'], cluster_data['Seniority'], cluster_data['Spending'], label=str(cluster_label),
-               s=6, linewidths=1)
+# Tạo subplot 2D
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(9, 7))
 
-ax.set_xlabel('Income')
-ax.set_ylabel('Seniority')
-ax.set_zlabel('Spending')
-ax.set_title('Customer Segmentation')
+# Biểu đồ cột cho thu nhập (Income)
+sns.barplot(x='Cluster', y='Income', data=data, ax=axes[0, 0], palette='viridis')
+axes[0, 0].set_title('Average Income for Each Cluster')
+axes[0, 0].set_xlabel('Cluster')
+axes[0, 0].set_ylabel('Average Income')
 
-plt.legend()
+# Biểu đồ cột cho chi phí (Spending)
+sns.barplot(x='Cluster', y='Spending', data=data, ax=axes[0, 1], palette='mako')
+axes[0, 1].set_title('Average Spending for Each Cluster')
+axes[0, 1].set_xlabel('Cluster')
+axes[0, 1].set_ylabel('Average Spending')
+
+# Biểu đồ cột cho trình độ (Seniority)
+sns.barplot(x='Cluster', y='Seniority', data=data, ax=axes[1, 0], palette='plasma')
+axes[1, 0].set_title('Average Seniority for Each Cluster')
+axes[1, 0].set_xlabel('Cluster')
+axes[1, 0].set_ylabel('Average Seniority')
+
+# Biểu đồ cột cho số lượng khách hàng trong mỗi nhóm
+sns.countplot(x='Cluster', data=data, ax=axes[1, 1], palette='Set3')
+axes[1, 1].set_title('Number of Customers in Each Cluster')
+axes[1, 1].set_xlabel('Cluster')
+axes[1, 1].set_ylabel('Count')
+
+# Tinh chỉnh layout
+plt.tight_layout()
+
+# Hiển thị biểu đồ
 plt.show()
-
-# chuẩn bị dữ liệu cho thuật toán Apriori
-# phân khúc khách hàng theo độ tuổi, thu nhập và thâm niên
-# tạo phân khúc Độ tuổi
-
-cut_labels_Age = ['Young', 'Adult', 'Mature', 'Senior']
-cut_bins = [0, 30, 45, 65, 120]
-data['Age_group'] = pd.cut(data['Age'], bins=cut_bins, labels=cut_labels_Age)
-# tạo phân khúc thu nhập
-cut_labels_Income = ['Low income', 'Low to medium income', 'Medium to high income', 'High income']
-data['Income_group'] = pd.qcut(data['Income'], q=4, labels=cut_labels_Income)
-# tạo phân khúc thâm niên
-cut_labels_Seniority = ['New customers', 'Discovering customers', 'Experienced customers', 'Old customers']
-data['Seniority_group'] = pd.qcut(data['Seniority'], q=4, labels=cut_labels_Seniority)
-data=data.drop(columns=['Age','Income','Seniority'])
-
-# xác định các phân khúc mới theo mức chi tiêu của khách hàng cho từng sản phẩm
-# Không phải người mua
-# Người mua thấp
-# Người mua thường xuyên
-# Người mua lớn nhất
-
-# Tạo các nhóm cho các mức tiêu thụ của sản phẩm từ 'Low consumer' đến 'Biggest consumer'
-cut_labels = ['Low consumer', 'Frequent consumer', 'Biggest consumer']
-# Tạo cột 'Wines_segment' với nhãn tương ứng cho mức tiêu thụ rượu
-data['Wines_segment'] = pd.qcut(data['Wines'][data['Wines'] > 0], q=[0, .25, .75, 1], labels=cut_labels).astype("object")
-# Tạo cột 'Fruits_segment' với nhãn tương ứng cho mức tiêu thụ trái cây
-data['Fruits_segment'] = pd.qcut(data['Fruits'][data['Fruits'] > 0], q=[0, .25, .75, 1], labels=cut_labels).astype("object")
-# Tạo cột 'Meat_segment' với nhãn tương ứng cho mức tiêu thụ thịt
-data['Meat_segment'] = pd.qcut(data['Meat'][data['Meat'] > 0], q=[0, .25, .75, 1], labels=cut_labels).astype("object")
-# Tạo cột 'Fish_segment' với nhãn tương ứng cho mức tiêu thụ cá
-data['Fish_segment'] = pd.qcut(data['Fish'][data['Fish'] > 0], q=[0, .25, .75, 1], labels=cut_labels).astype("object")
-# Tạo cột 'Sweets_segment' với nhãn tương ứng cho mức tiêu thụ đồ ngọt
-data['Sweets_segment'] = pd.qcut(data['Sweets'][data['Sweets'] > 0], q=[0, .25, .75, 1], labels=cut_labels).astype("object")
-# Tạo cột 'Gold_segment' với nhãn tương ứng cho mức tiêu thụ vàng bạc
-data['Gold_segment'] = pd.qcut(data['Gold'][data['Gold'] > 0], q=[0, .25, .75, 1], labels=cut_labels).astype("object")
-# Thay thế giá trị NaN bằng "Non consumer"
-data.replace(np.nan, "Non consumer", inplace=True)
-# Loại bỏ các cột không cần thiết liên quan đến chi tiêu
-data.drop(columns=['Spending', 'Wines', 'Fruits', 'Meat', 'Fish', 'Sweets', 'Gold'], inplace=True)
-# Chuyển đổi toàn bộ DataFrame thành kiểu dữ liệu object
-data = data.astype(object)
-
-# Thiết lập hiển thị tối đa cho cột, hàng, và độ rộng cột trong DataFrame
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-pd.set_option('display.max_colwidth', 999)
-
-# Định dạng hiển thị số thập phân trong DataFrame
-pd.options.display.float_format = "{:.3f}".format
-# Tạo DataFrame 'association' là bản sao của 'data'
-association = data.copy()
-# Tạo one-hot encoding cho các biến phân loại trong DataFrame
-df = pd.get_dummies(association)
-# Thiết lập giá trị support tối thiểu và chiều dài tối đa cho luật kết hợp
-min_support = 0.08
-max_len = 10
-# Áp dụng thuật toán Apriori để tìm các mục phổ biến
-frequent_items = apriori(df, use_colnames=True, min_support=min_support, max_len=max_len + 1)
-# Áp dụng thuật toán tạo luật kết hợp (association rules) dựa trên mục phổ biến
-rules = association_rules(frequent_items, metric='lift', min_threshold=1)
-# Xác định sản phẩm và segment cụ thể cần quan tâm
-product = 'Wines'
-segment = 'Biggest consumer'
-target = '{\'%s_segment_%s\'}' % (product, segment)
-# Lọc các luật kết hợp liên quan đến sản phẩm và segment cụ thể
-results_personnal_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnal_care.head()
-# in ra kết quả
-print(association)
