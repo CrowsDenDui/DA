@@ -3,6 +3,7 @@ import pandas as pd
 import warnings
 import matplotlib.pyplot as plt
 import time, os, psutil
+import seaborn as sns
 from datetime import date
 from sklearn.preprocessing import StandardScaler
 from mlxtend.frequent_patterns import apriori
@@ -103,38 +104,54 @@ print("Bộ nhớ tiêu thụ: {0}".format(memocost) + "MB")
 products = ['Wines', 'Fruits', 'Meat', 'Fish', 'Sweets', 'Gold']
 segments = ['Low consumer', 'Frequent consumer', 'Biggest consumer']
 
-# Lặp qua từng sản phẩm và segment để lọc kết quả
+# Lặp qua từng sản phẩm và segment để lọc kết quả và thu thập thông tin cho đồ thị
 for product in products:
+    # Tạo DataFrame để lưu trữ thông tin cần vẽ đồ thị
+    chart_data = pd.DataFrame(columns=['Segment', 'Condition', 'Count'])
+    
     for segment in segments:
         target = f'{{\'{product}_segment_{segment}\'}}'
         relevant_rules = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-        
-        # In ra thông tin chi tiết về sản phẩm và segment cụ thể
-        print(f"\nSản phẩm {product} - Segment {segment}:\n")
-        print(relevant_rules.head())
-        
-        # In ra dữ liệu cho các điều kiện
+        # print(relevant_rules)
+
         if segment == 'Frequent consumer':
             # Kiểm tra và chuyển đổi dữ liệu cho cột 'Income' và 'Spending' sang kiểu numeric
             data['Income'] = pd.to_numeric(data['Income'], errors='coerce')
-            data['Spending'] = pd.to_numeric(data['Spending'], errors='coerce')
 
-            # Kiểm tra và loại bỏ các dòng có giá trị không hợp lệ trong cột 'Income' và 'Spending'
-            data = data.dropna(subset=['Income', 'Spending'])
+            # Kiểm tra sự tồn tại của cột 'Spending'
+            if 'Spending' in data.columns:
+                data['Spending'] = pd.to_numeric(data['Spending'], errors='coerce')
 
-            # Kiểm tra và thực hiện so sánh chỉ khi cột có kiểu dữ liệu là numeric
-            income_condition = (data['Income'] >= data['Income'].quantile(0.25)) & (data['Income'] <= data['Income'].quantile(0.75))
-            print("\nDữ liệu cho Khách hàng có thu nhập trung bình khoảng:\n", data[income_condition])
+                # Kiểm tra và loại bỏ các dòng có giá trị không hợp lệ trong cột 'Income' và 'Spending'
+                data = data.dropna(subset=['Income', 'Spending'])
 
-            spending_condition = (data['Spending'] >= data['Spending'].quantile(0.25)) & (data['Spending'] <= data['Spending'].quantile(0.75))
-            print("\nDữ liệu cho Khách hàng có tổng chi tiêu trung bình khoảng:\n", data[spending_condition])
+                # Kiểm tra và thực hiện so sánh chỉ khi cột có kiểu dữ liệu là numeric
+                income_condition = (data['Income'] >= data['Income'].quantile(0.25)) & (data['Income'] <= data['Income'].quantile(0.75))
+                spending_condition = (data['Spending'] >= data['Spending'].quantile(0.25)) & (data['Spending'] <= data['Spending'].quantile(0.75))
+                seniority_condition = (data['Seniority'] >= data['Seniority'].quantile(0.25)) & (data['Seniority'] <= data['Seniority'].quantile(0.75))
+                education_condition = (data['Education'] == 'Postgraduate')
 
-            seniority_condition = (data['Seniority'] >= data['Seniority'].quantile(0.25)) & (data['Seniority'] <= data['Seniority'].quantile(0.75))
-            print("\nDữ liệu cho Khách hàng đăng ký với công ty khoảng:\n", data[seniority_condition])
+                # Lưu trữ thông tin vào DataFrame
+                counts = [data[income_condition].shape[0],
+                          data[spending_condition].shape[0],
+                          data[seniority_condition].shape[0],
+                          data[education_condition].shape[0]]
 
-            education_condition = (data['Education'] == 'Postgraduate')
-            print("\nDữ liệu cho Khách hàng có bằng tốt nghiệp:\n", data[education_condition])
-            
+                conditions = ['Income'] * counts[0] + ['Spending'] * counts[1] + ['Seniority'] * counts[2] + ['Education'] * counts[3]
+
+                chart_data = pd.concat([chart_data, pd.DataFrame({
+                    'Segment': [f'{product} - {segment}'] * sum(counts),
+                    'Condition': conditions,
+                    'Count': [1] * sum(counts)
+                })], ignore_index=True)
+
+    # Vẽ đồ thị cột
+    sns.catplot(x='Segment', hue='Condition', kind='count', data=chart_data, height=7, aspect=1.4, dodge=True)
+    plt.xlabel('Segment')
+    plt.ylabel('Count')
+    plt.title(f'Comparison of Segments for {product} Based on Conditions')
+    plt.tight_layout()
+    plt.show()
 # Vẽ đồ thị
 plt.plot([timecost], [memocost], color='red', marker='o', linestyle='dashed', linewidth=2, markersize=8)
 plt.xlabel('Thời gian thực hiện (second)')
