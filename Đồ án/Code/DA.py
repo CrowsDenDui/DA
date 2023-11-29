@@ -18,9 +18,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score,confusion_matrix,f1_score
-import warnings
+import warnings 
 warnings.filterwarnings("ignore", category=UserWarning, module="matplotlib")
 warnings.filterwarnings('ignore')
+
+
 
 df = pd.read_csv('Doan\marketing_campaign.csv',header=0, sep="\t")
 
@@ -62,6 +64,10 @@ df['day_engaged'] = (df['first_day'] - df['Dt_Customer']).dt.days
 df=df.drop(columns=["ID", "Dt_Customer", "first_day", "Year_Birth", "Dt_Customer", "Recency", "Complain"],axis=1)
 
 print(df.head())
+
+sns.countplot(df.Marital_Status)
+sns.set(rc={'figure.figsize':(4,4)})
+plt.show()
 
 plt.rcParams.update(plt.rcParamsDefault)
 
@@ -151,8 +157,8 @@ upper_range = q3 + (1.5 * iqr)
 
 df1 = df1[~( (df1 < lower_range)|(df1 > upper_range) ).any(axis=1)]
 
-wcss=[] ##Initializing the list for the values of WCSS  
-for i in range (1,11): #for diferent values of k ranging from 1 to 10
+wcss=[] 
+for i in range (1,11): 
  kmeans=KMeans(n_clusters=i,init='k-means++',random_state=42)
  kmeans.fit(df1)
  wcss.append(kmeans.inertia_)
@@ -185,8 +191,7 @@ df1['cluster'] = pred + 1
 pl = sns.countplot(x=df1["cluster"])
 pl.set_title("Distribution Of The Clusters")
 plt.show()
-
-sns.set(rc={'axes.facecolor':'black', 'figure.facecolor':'black', 'axes.grid' : False, 'font.family': 'Ubuntu'})
+sns.set(rc={'axes.facecolor':'gray', 'figure.facecolor':'gray', 'axes.grid' : False, 'font.family': 'Arial'})
 
 for i in df1:
     diag = sns.FacetGrid(df1, col = "cluster", hue = "cluster", palette = "Set1")
@@ -194,8 +199,9 @@ for i in df1:
     diag.set_xticklabels(rotation=25, color = 'white')
     diag.set_yticklabels(color = 'white')
     diag.set_xlabels(size=16, color = 'white')
-    diag.set_titles(size=16, color = '#f01132', fontweight="bold")
+    diag.set_titles(size=16, color = '#FFFF00', fontweight="bold")
     diag.fig.set_figheight(6)
+
 
 data = df1.copy()
 
@@ -220,7 +226,7 @@ data['Gold_segment'] = pd.qcut(Products_DF['Gold'][Products_DF['Gold']>0],q=[0, 
 data.replace(np.nan, "Inactive Customer",inplace=True)
 data = data.astype(object)
 
-data.head()
+print(data.head())
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -243,37 +249,37 @@ product='Wines'
 segment='Highly Active Customer'
 target = '{\'%s_segment_%s\'}' %(product,segment)
 results_personnel_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnel_care.head()
+print(results_personnel_care.head())
 
 product='Fruits'
 segment='Highly Active Customer'
 target = '{\'%s_segment_%s\'}' %(product,segment)
 results_personnel_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnel_care.head()
+print(results_personnel_care.head())
 
 product='Meat'
 segment='Highly Active Customer'
 target = '{\'%s_segment_%s\'}' %(product,segment)
 results_personnel_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnel_care.head()
+print(results_personnel_care.head())
 
 product='Fish'
 segment='Highly Active Customer'
 target = '{\'%s_segment_%s\'}' %(product,segment)
 results_personnel_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnel_care.head()
+print(results_personnel_care.head())
 
 product='Sweets'
 segment='Highly Active Customer'
 target = '{\'%s_segment_%s\'}' %(product,segment)
 results_personnel_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnel_care.head()
+print(results_personnel_care.head())
 
 product='Gold'
 segment='Highly Active Customer'
 target = '{\'%s_segment_%s\'}' %(product,segment)
 results_personnel_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-results_personnel_care.head()
+print(results_personnel_care.head())
 
 df2=df1.copy()
 x = df2.drop('cluster', axis=1)
@@ -311,7 +317,3 @@ plt.figure(figsize=(10, 5))
 sns.heatmap(confusion_matrix(y_test, y_predicted), annot=True, fmt='g');
 plt.title('Confusion Matrix', fontsize=20)
 plt.show()
-
-# sns.countplot(df.Marital_Status)
-# sns.set(rc={'figure.figsize':(4,4)})
-# plt.show()
