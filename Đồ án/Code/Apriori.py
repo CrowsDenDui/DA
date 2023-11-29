@@ -100,58 +100,19 @@ memocost = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
 print("Thời gian thực hiện: {0}".format(timecost) + "s")
 print("Bộ nhớ tiêu thụ: {0}".format(memocost) + "MB")
 
-# Xác định toàn bộ sản phẩm và segment cụ thể cần quan tâm
-products = ['Wines', 'Fruits', 'Meat', 'Fish', 'Sweets', 'Gold']
-segments = ['Low consumer', 'Frequent consumer', 'Biggest consumer']
+# Chọn sản phẩm và phân khúc cần kiểm tra
+product='Wines'
+segment='Biggest consumer'
+target = '{\'%s_segment_%s\'}' %(product,segment)
+# Lọc các luật kết hợp liên quan đến sản phẩm và phân khúc được chọn
+results_personnal_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
+print(results_personnal_care.head())
 
-# Lặp qua từng sản phẩm và segment để lọc kết quả và thu thập thông tin cho đồ thị
-for product in products:
-    # Tạo DataFrame để lưu trữ thông tin cần vẽ đồ thị
-    chart_data = pd.DataFrame(columns=['Segment', 'Condition', 'Count'])
-    
-    for segment in segments:
-        target = f'{{\'{product}_segment_{segment}\'}}'
-        relevant_rules = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-        # print(relevant_rules)
+# In thông tin về khách hàng lớn nhất của rượu vang
+largest_wine_consumer = data[data['Wines_segment'] == 'Biggest consumer'].head(1)
+print("\nThông tin về khách hàng lớn nhất của rượu vang:")
+print(largest_wine_consumer[['Income', 'Spending', 'Seniority', 'Education']])
 
-        if segment == 'Frequent consumer':
-            # Kiểm tra và chuyển đổi dữ liệu cho cột 'Income' và 'Spending' sang kiểu numeric
-            data['Income'] = pd.to_numeric(data['Income'], errors='coerce')
-
-            # Kiểm tra sự tồn tại của cột 'Spending'
-            if 'Spending' in data.columns:
-                data['Spending'] = pd.to_numeric(data['Spending'], errors='coerce')
-
-                # Kiểm tra và loại bỏ các dòng có giá trị không hợp lệ trong cột 'Income' và 'Spending'
-                data = data.dropna(subset=['Income', 'Spending'])
-
-                # Kiểm tra và thực hiện so sánh chỉ khi cột có kiểu dữ liệu là numeric
-                income_condition = (data['Income'] >= data['Income'].quantile(0.25)) & (data['Income'] <= data['Income'].quantile(0.75))
-                spending_condition = (data['Spending'] >= data['Spending'].quantile(0.25)) & (data['Spending'] <= data['Spending'].quantile(0.75))
-                seniority_condition = (data['Seniority'] >= data['Seniority'].quantile(0.25)) & (data['Seniority'] <= data['Seniority'].quantile(0.75))
-                education_condition = (data['Education'] == 'Postgraduate')
-
-                # Lưu trữ thông tin vào DataFrame
-                counts = [data[income_condition].shape[0],
-                          data[spending_condition].shape[0],
-                          data[seniority_condition].shape[0],
-                          data[education_condition].shape[0]]
-
-                conditions = ['Income'] * counts[0] + ['Spending'] * counts[1] + ['Seniority'] * counts[2] + ['Education'] * counts[3]
-
-                chart_data = pd.concat([chart_data, pd.DataFrame({
-                    'Segment': [f'{product} - {segment}'] * sum(counts),
-                    'Condition': conditions,
-                    'Count': [1] * sum(counts)
-                })], ignore_index=True)
-
-    # Vẽ đồ thị cột
-    sns.catplot(x='Segment', hue='Condition', kind='count', data=chart_data, height=7, aspect=1.4, dodge=True)
-    plt.xlabel('Segment')
-    plt.ylabel('Count')
-    plt.title(f'Comparison of Segments for {product} Based on Conditions')
-    plt.tight_layout()
-    plt.show()
 # Vẽ đồ thị
 plt.plot([timecost], [memocost], color='red', marker='o', linestyle='dashed', linewidth=2, markersize=8)
 plt.xlabel('Thời gian thực hiện (second)')
