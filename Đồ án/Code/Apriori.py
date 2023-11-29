@@ -100,22 +100,51 @@ memocost = psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2
 print("Thời gian thực hiện: {0}".format(timecost) + "s")
 print("Bộ nhớ tiêu thụ: {0}".format(memocost) + "MB")
 
-# Chọn sản phẩm và phân khúc cần kiểm tra
-product='Wines'
-segment='Biggest consumer'
-target = '{\'%s_segment_%s\'}' %(product,segment)
-# Lọc các luật kết hợp liên quan đến sản phẩm và phân khúc được chọn
-results_personnal_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
-print(results_personnal_care.head())
+# # Chọn sản phẩm và phân khúc cần kiểm tra
+# product='Wines'
+# segment='Biggest consumer'
+# target = '{\'%s_segment_%s\'}' %(product,segment)
+# # Lọc các luật kết hợp liên quan đến sản phẩm và phân khúc được chọn
+# results_personnal_care = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
+# print(results_personnal_care.head())
 
-# In thông tin về khách hàng lớn nhất của rượu vang
-largest_wine_consumer = data[data['Wines_segment'] == 'Biggest consumer'].head(1)
-print("\nThông tin về khách hàng lớn nhất của rượu vang:")
-print(largest_wine_consumer[['Income', 'Spending', 'Seniority', 'Education']])
+# # In thông tin về khách hàng lớn nhất của rượu vang
+# largest_wine_consumer = data[data['Wines_segment'] == 'Biggest consumer'].head(1)
+# print("\nThông tin về khách hàng lớn nhất của rượu vang:")
+# print(largest_wine_consumer[['Income', 'Spending', 'Seniority', 'Education']])
+
+# Chọn sản phẩm và phân khúc cần kiểm tra 
+# Chọn một trong các sản phẩm sau :'Wines', 'Fruits', 'Meat', 'Fish', 'Sweets', 'Gold'
+product = 'Wines'
+# Chọn một trong các phân khúc sau :'Low consumer', 'Frequent consumer', 'Biggest consumer'
+segment = 'Biggest consumer'
+
+# Tạo DataFrame để lưu trữ kết quả
+selected_results = pd.DataFrame(columns=['Product', 'Segment', 'Rule', 'Support', 'Confidence', 'Lift'])
+
+# Lọc các luật kết hợp liên quan đến sản phẩm và phân khúc được chọn
+target = f'{product}_segment_{segment}'
+results = rules[rules['consequents'].astype(str).str.contains(target, na=False)].sort_values(by='confidence', ascending=False)
+
+# Lấy thông tin từ kết quả và thêm vào DataFrame
+results['Product'] = product
+results['Segment'] = segment
+selected_results = pd.concat([selected_results, results[['Product', 'Segment', 'antecedents', 'support', 'confidence', 'lift']]])
+
+# In ra kết quả
+print(selected_results)
+
+# Vẽ biểu đồ
+plt.figure(figsize=(10, 7))
+sns.scatterplot(x='support', y='confidence', hue='lift', size='lift', data=selected_results, palette='viridis', sizes=(20, 200))
+plt.title(f'Luật Kết Hợp cho {product} và Phân Khúc {segment}')
+plt.xlabel('Hỗ trợ (Support)')
+plt.ylabel('Tin cậy (Confidence)')
+plt.show()
 
 # Vẽ đồ thị
-plt.plot([timecost], [memocost], color='red', marker='o', linestyle='dashed', linewidth=2, markersize=8)
-plt.xlabel('Thời gian thực hiện (second)')
-plt.ylabel('Bộ nhớ tiêu tốn (MB)')
-plt.title('Thời gian thực hiện và bộ nhớ tiêu tốn')
-plt.show()
+# plt.plot([timecost], [memocost], color='red', marker='o', linestyle='dashed', linewidth=2, markersize=8)
+# plt.xlabel('Thời gian thực hiện (second)')
+# plt.ylabel('Bộ nhớ tiêu tốn (MB)')
+# plt.title('Thời gian thực hiện và bộ nhớ tiêu tốn')
+# plt.show()

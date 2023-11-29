@@ -7,11 +7,14 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from sklearn.preprocessing import StandardScaler, normalize
 from sklearn.mixture import GaussianMixture
-from mlxtend.frequent_patterns import apriori
-from mlxtend.frequent_patterns import association_rules
+import sweetviz as sv
 import warnings
 warnings.filterwarnings('ignore')
 data=pd.read_csv('DA\marketing_campaign.csv',header=0,sep=';')
+
+report = sv.analyze(data)
+report.show_html("your_data_sweetviz_report.html")
+
 # print(data)
 #Tạo biến chi tiêu
 data['Age']=2014-data['Year_Birth']
@@ -30,14 +33,16 @@ data['Has_child'] = np.where(data.Children> 0, 'Has child', 'No child')
 data['Children'].replace({3: "3 children",2:'2 children',1:'1 child',0:"No child"},inplace=True)
 data=data.rename(columns={'MntWines': "Wines",'MntFruits':'Fruits','MntMeatProducts':'Meat','MntFishProducts':'Fish','MntSweetProducts':'Sweets','MntGoldProds':'Gold'})
 
-
 data=data[['Age','Education','Marital_Status','Income','Spending','Seniority','Has_child','Children','Wines','Fruits','Meat','Fish','Sweets','Gold']]
 data.head()
+
+
 # loại bỏ các giá trị ngoại lệ và các giá trị còn thiếu trong tập dữ liệu
 data=data.dropna(subset=['Income'])
 data=data[data['Income']<600000]
 
 print(data)
+
 # Chuẩn hóa dữ liệu
 # chuẩn hóa các biến như Income, Seniority và Spending, đưa chúng về cùng một khoảng giá trị
 scaler=StandardScaler()
